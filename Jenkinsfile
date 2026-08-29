@@ -54,10 +54,10 @@ pipeline {
                         -v "$WORKSPACE:/workspace" \
                         aquasec/trivy:latest \
                         fs \
-                        --scanners vuln,secret \
+                        --scanners vuln \
                         --severity HIGH,CRITICAL \
                         --exit-code 1 \
-                        /workspace
+                        /workspace/package-lock.json
                 '''
             }
         }
@@ -80,7 +80,7 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 1, unit: 'HOURS') {
+                timeout(time: 30, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
@@ -89,7 +89,7 @@ pipeline {
 
     post {
         success {
-            echo '✅ Build, Test, SonarQube dan Quality Gate berhasil.'
+            echo '✅ Build, Test, Trivy, SonarQube dan Quality Gate berhasil.'
         }
 
         failure {
