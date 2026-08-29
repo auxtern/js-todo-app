@@ -1,9 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'node:22-alpine'
-        }
-    }
+    agent any
 
     options {
         timestamps()
@@ -13,18 +9,39 @@ pipeline {
     stages {
 
         stage('Checkout') {
+            agent {
+                docker {
+                    image 'node:22-alpine'
+                    reuseNode true
+                }
+            }
+
             steps {
                 checkout scm
             }
         }
 
         stage('Install Dependencies') {
+            agent {
+                docker {
+                    image 'node:22-alpine'
+                    reuseNode true
+                }
+            }
+
             steps {
                 sh 'npm ci'
             }
         }
 
         stage('Test') {
+            agent {
+                docker {
+                    image 'node:22-alpine'
+                    reuseNode true
+                }
+            }
+
             steps {
                 sh 'npm test -- --ci --coverage'
             }
