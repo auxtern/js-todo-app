@@ -51,7 +51,7 @@ pipeline {
             steps {
                 sh '''
                     docker run --rm \
-                        -v "$WORKSPACE:/workspace:ro" \
+                        -v "$WORKSPACE:/workspace" \
                         -v trivy_cache:/root/.cache/trivy \
                         aquasec/trivy:latest \
                         fs \
