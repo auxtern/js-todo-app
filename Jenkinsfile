@@ -6,7 +6,6 @@ pipeline {
     }
 
     options {
-        skipDefaultCheckout(true)
         timestamps()
     }
 
@@ -30,27 +29,33 @@ pipeline {
             }
         }
 
-        stage('Archive Test Results') {
+        stage('SonarQube Analysis') {
             steps {
-                archiveArtifacts(
-                    artifacts: 'coverage/**',
-                    allowEmptyArchive: true
-                )
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        npm install -g sonar-scanner
+                        sonar-scanner
+                    '''
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
             }
         }
     }
 
     post {
-        always {
-            echo "Build result: ${currentBuild.currentResult}"
-        }
-
         success {
-            echo '✅ Semua test berhasil.'
+            echo '✅ Build, Test, SonarQube dan Quality Gate berhasil.'
         }
 
         failure {
-            echo '❌ Build atau test gagal.'
+            echo '❌ Pipeline gagal.'
         }
     }
 }
