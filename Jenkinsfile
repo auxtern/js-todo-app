@@ -32,14 +32,11 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh '''
-                        npm install --no-save sonar-scanner
-                        npx sonar-scanner
-                    '''
+                    sh 'sonar-scanner'
                 }
             }
         }
-
+        
         stage('Quality Gate') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
