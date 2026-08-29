@@ -83,6 +83,7 @@ pipeline {
                         --cache-dir /var/trivy-cache \
                         --scanners vuln \
                         --severity HIGH,CRITICAL \
+                        --exit-code 1 \
                         --format sarif \
                         --output trivy-results.sarif \
                         .
