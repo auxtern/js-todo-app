@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'delcom-node-sonar:22'
+            image 'node:22-alpine'
         }
     }
 
@@ -31,6 +31,13 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
+            agent {
+                docker {
+                    image 'sonarsource/sonar-scanner-cli:latest'
+                    reuseNode true
+                }
+            }
+
             steps {
                 withSonarQubeEnv('SonarQube') {
                     sh 'sonar-scanner'
