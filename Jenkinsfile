@@ -30,7 +30,9 @@ pipeline {
             }
 
             steps {
-                sh 'npm ci'
+                sh '''
+                    npm ci
+                '''
             }
         }
 
@@ -43,25 +45,34 @@ pipeline {
             }
 
             steps {
-                sh 'npm test -- --ci --coverage'
+                sh '''
+                    npm test -- --ci --coverage
+                '''
             }
         }
 
         stage('Trivy Security Scan') {
             steps {
                 sh '''
+                    set -e
+
                     rm -f trivy-results.sarif
 
                     docker run --rm \
                         -v "$WORKSPACE:/workspace" \
                         -v trivy_cache:/root/.cache/trivy \
-                        aquasec/trivy:latest \
+                        aquasec/trivy:0.74.0 \
                         fs \
                         --scanners vuln \
                         --severity HIGH,CRITICAL \
                         --format sarif \
                         --output /workspace/trivy-results.sarif \
                         /workspace
+
+                    echo "=== Trivy SARIF ==="
+                    ls -lh trivy-results.sarif
+
+                    test -s trivy-results.sarif
                 '''
             }
         }
@@ -70,6 +81,7 @@ pipeline {
             steps {
                 recordIssues(
                     enabledForFailure: true,
+                    failOnError: true,
                     tools: [
                         sarif(
                             id: 'trivy',
@@ -92,7 +104,9 @@ pipeline {
 
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh 'sonar-scanner'
+                    sh '''
+                        sonar-scanner
+                    '''
                 }
             }
         }
@@ -107,6 +121,7 @@ pipeline {
     }
 
     post {
+
         always {
             archiveArtifacts(
                 artifacts: 'trivy-results.sarif',
