@@ -50,6 +50,8 @@ pipeline {
         stage('Trivy Security Scan') {
             steps {
                 sh '''
+                    rm -f trivy-results.sarif
+
                     docker run --rm \
                         -v "$WORKSPACE:/workspace" \
                         -v trivy_cache:/root/.cache/trivy \
@@ -57,8 +59,8 @@ pipeline {
                         fs \
                         --scanners vuln \
                         --severity HIGH,CRITICAL \
-                        --format json \
-                        --output /workspace/trivy-results.json \
+                        --format sarif \
+                        --output /workspace/trivy-results.sarif \
                         /workspace
                 '''
             }
@@ -67,8 +69,13 @@ pipeline {
         stage('Publish Trivy Results') {
             steps {
                 recordIssues(
+                    enabledForFailure: true,
                     tools: [
-                        trivy(pattern: 'trivy-results.json')
+                        sarif(
+                            id: 'trivy',
+                            name: 'Trivy Security',
+                            pattern: 'trivy-results.sarif'
+                        )
                     ]
                 )
             }
@@ -100,6 +107,13 @@ pipeline {
     }
 
     post {
+        always {
+            archiveArtifacts(
+                artifacts: 'trivy-results.sarif',
+                allowEmptyArchive: true
+            )
+        }
+
         success {
             echo '✅ Build, Test, Trivy, SonarQube dan Quality Gate berhasil.'
         }
