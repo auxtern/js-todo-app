@@ -1,12 +1,13 @@
 pipeline {
     agent {
         docker {
-            image 'node:22-alpine'
+            image 'node:22-bookworm-slim'
         }
     }
 
     options {
         timestamps()
+        skipDefaultCheckout(true)
     }
 
     stages {
@@ -32,11 +33,19 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh 'sonar-scanner'
+                    script {
+                        def scannerHome = tool 'SonarScanner'
+
+                        withEnv([
+                            "PATH+SONAR=${scannerHome}/bin"
+                        ]) {
+                            sh 'sonar-scanner'
+                        }
+                    }
                 }
             }
         }
-        
+
         stage('Quality Gate') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
