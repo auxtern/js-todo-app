@@ -35,6 +35,7 @@ pipeline {
                 docker {
                     image 'sonarsource/sonar-scanner-cli:latest'
                     reuseNode true
+                    args '--network ci-network'
                 }
             }
 
