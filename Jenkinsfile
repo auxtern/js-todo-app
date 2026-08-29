@@ -33,8 +33,8 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     sh '''
-                        npm install -g sonar-scanner
-                        sonar-scanner
+                        npm install --no-save sonar-scanner
+                        npx sonar-scanner
                     '''
                 }
             }
