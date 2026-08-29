@@ -51,13 +51,14 @@ pipeline {
             steps {
                 sh '''
                     docker run --rm \
-                        -v "$WORKSPACE:/workspace" \
+                        -v "$WORKSPACE:/workspace:ro" \
+                        -v trivy_cache:/root/.cache/trivy \
                         aquasec/trivy:latest \
                         fs \
                         --scanners vuln \
                         --severity HIGH,CRITICAL \
                         --exit-code 1 \
-                        /workspace/package-lock.json
+                        /workspace
                 '''
             }
         }
