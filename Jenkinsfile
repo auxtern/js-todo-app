@@ -47,6 +47,21 @@ pipeline {
             }
         }
 
+        stage('Trivy Security Scan') {
+            steps {
+                sh '''
+                    docker run --rm \
+                        -v "$WORKSPACE:/workspace" \
+                        aquasec/trivy:latest \
+                        fs \
+                        --scanners vuln,secret \
+                        --severity HIGH,CRITICAL \
+                        --exit-code 1 \
+                        /workspace
+                '''
+            }
+        }
+
         stage('SonarQube Analysis') {
             agent {
                 docker {
