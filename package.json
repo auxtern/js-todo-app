@@ -1,0 +1,15 @@
+{
+  "name": "js-todo-app",
+  "version": "1.0.0",
+  "description": "Simple Todo App with Clean Architecture",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
