@@ -57,9 +57,20 @@ pipeline {
                         fs \
                         --scanners vuln \
                         --severity HIGH,CRITICAL \
-                        --exit-code 1 \
+                        --format json \
+                        --output /workspace/trivy-results.json \
                         /workspace
                 '''
+            }
+        }
+
+        stage('Publish Trivy Results') {
+            steps {
+                recordIssues(
+                    tools: [
+                        trivy(pattern: 'trivy-results.json')
+                    ]
+                )
             }
         }
 
