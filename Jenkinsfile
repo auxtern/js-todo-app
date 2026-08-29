@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'node:22-bookworm-slim'
+            image 'delcom-node-sonar:22'
         }
     }
 
@@ -33,15 +33,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    script {
-                        def scannerHome = tool 'SonarScanner'
-
-                        withEnv([
-                            "PATH+SONAR=${scannerHome}/bin"
-                        ]) {
-                            sh 'sonar-scanner'
-                        }
-                    }
+                    sh 'sonar-scanner'
                 }
             }
         }
