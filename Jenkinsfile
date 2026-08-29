@@ -52,27 +52,23 @@ pipeline {
         }
 
         stage('Trivy Security Scan') {
+            agent {
+                docker {
+                    image 'aquasec/trivy:0.74.0'
+                    reuseNode true
+                }
+            }
+
             steps {
                 sh '''
-                    set -e
-
-                    rm -f trivy-results.sarif
-
-                    docker run --rm \
-                        -v "$WORKSPACE:/workspace" \
-                        -v trivy_cache:/root/.cache/trivy \
-                        aquasec/trivy:0.74.0 \
-                        fs \
+                    trivy fs \
                         --scanners vuln \
                         --severity HIGH,CRITICAL \
                         --format sarif \
-                        --output /workspace/trivy-results.sarif \
-                        /workspace
+                        --output trivy-results.sarif \
+                        .
 
-                    echo "=== Trivy SARIF ==="
                     ls -lh trivy-results.sarif
-
-                    test -s trivy-results.sarif
                 '''
             }
         }
