@@ -56,20 +56,20 @@ pipeline {
                 docker {
                     image 'aquasec/trivy:0.74.0'
                     reuseNode true
-                    args '--entrypoint=""'
+                    /* groovylint-disable-next-line LineLength */
+                    args '--entrypoint="" -e HOME=/root -e XDG_CACHE_HOME=/root/.cache -v trivy_cache:/root/.cache/trivy'
                 }
             }
 
             steps {
                 sh '''
                     trivy fs \
-                        --scanners vuln \
-                        --severity HIGH,CRITICAL \
-                        --format sarif \
-                        --output trivy-results.sarif \
-                        .
-
-                    ls -lh trivy-results.sarif
+                    --cache-dir /root/.cache/trivy \
+                    --scanners vuln \
+                    --severity HIGH,CRITICAL \
+                    --format sarif \
+                    --output trivy-results.sarif \
+                    .
                 '''
             }
         }
