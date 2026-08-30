@@ -32,7 +32,13 @@ pipeline {
 
             steps {
                 sh '''
+                    set -e
+
+                    echo "=== Installing Dependencies ==="
+
                     npm install
+
+                    echo "=== Dependencies Installed ==="
                 '''
             }
         }
@@ -47,7 +53,13 @@ pipeline {
 
             steps {
                 sh '''
+                    set -e
+
+                    echo "=== Running Tests ==="
+
                     npm test -- --ci --coverage
+
+                    echo "=== Tests Passed ==="
                 '''
             }
         }
@@ -79,6 +91,7 @@ pipeline {
                     ls -ld /var/trivy-cache
 
                     echo "=== Trivy Scan ==="
+
                     trivy fs \
                         --cache-dir /var/trivy-cache \
                         --scanners vuln \
@@ -122,7 +135,13 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     sh '''
+                        set -e
+
+                        echo "=== SonarQube Analysis ==="
+
                         sonar-scanner
+
+                        echo "=== SonarQube Analysis Completed ==="
                     '''
                 }
             }
@@ -133,6 +152,54 @@ pipeline {
                 timeout(time: 30, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
+            }
+        }
+
+        stage('Package Application') {
+            agent {
+                docker {
+                    image 'node:22-alpine'
+                    reuseNode true
+                }
+            }
+
+            steps {
+                sh '''
+                    set -e
+
+                    echo "=== Creating Application Package ==="
+
+                    apk add --no-cache zip
+
+                    rm -f latest-app.zip
+
+                    zip -r latest-app.zip . \
+                        -x "node_modules/*" \
+                        -x ".git/*" \
+                        -x ".env" \
+                        -x ".env.*" \
+                        -x "coverage/*" \
+                        -x "latest-app.zip" \
+                        -x "trivy-results.sarif"
+
+                    echo "=== Application Package Created ==="
+
+                    ls -lh latest-app.zip
+
+                    echo "=== Package Content ==="
+
+                    unzip -l latest-app.zip
+                '''
+            }
+        }
+
+        stage('Publish Application') {
+            steps {
+                archiveArtifacts(
+                    artifacts: 'latest-app.zip',
+                    fingerprint: true,
+                    allowEmptyArchive: false
+                )
             }
         }
     }
@@ -147,7 +214,8 @@ pipeline {
         }
 
         success {
-            echo '✅ Build, Test, Trivy, SonarQube dan Quality Gate berhasil.'
+            echo '✅ Test, Trivy, SonarQube, Quality Gate dan Package berhasil.'
+            echo '📦 Artifact: latest-app.zip'
         }
 
         failure {
