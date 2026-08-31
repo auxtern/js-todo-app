@@ -239,8 +239,10 @@ pipeline {
                      * Contoh:
                      * http://jenkins.example.com/job/my-app/123/artifact/latest-app.zip
                      */
-                    env.ARTIFACT_URL =
-                        "${env.BUILD_URL}artifact/latest-app.zip"
+                    env.ARTIFACT_URL = env.BUILD_URL.replace(
+                        'localhost',
+                        'host.docker.internal'
+                    ) + 'artifact/latest-app.zip'
 
                     echo "======================================"
                     echo "       APPLICATION PUBLISHED"
