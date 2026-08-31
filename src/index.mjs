@@ -11,8 +11,9 @@ import DeleteTodo from './usecases/DeleteTodo.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.APP_PORT || 3000;
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'todos.sqlite');
 
-const db = new sqlite3.Database(path.join(__dirname, '..', 'todos.sqlite'));
+const db = new sqlite3.Database(DB_PATH);
 const todoRepository = await SqliteTodoRepository.init(db);
 
 const createTodo = new CreateTodo(todoRepository);
@@ -66,6 +67,7 @@ app.use((err, req, res, next) => {
   res.status(status).json({ error: err.message });
 });
 
-app.listen(PORT, () => {
-  console.log(`Todo web service listening on port ${PORT}`);
+app.listen(PORT, function () {
+  // read back the bound port so APP_PORT=0 (ephemeral port) is reported correctly
+  console.log(`Todo web service listening on port ${this.address().port}`);
 });
