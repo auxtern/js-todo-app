@@ -144,7 +144,7 @@ pipeline {
                 docker {
                     image 'sonarsource/sonar-scanner-cli:latest'
                     reuseNode true
-                    args '--network ci-network'
+                    args '--network cicd-network'
                 }
             }
 
@@ -260,7 +260,7 @@ pipeline {
                 docker {
                     image 'curlimages/curl:8.15.0'
                     reuseNode true
-                    args '--network ci-network'
+                    args '--network cicd-network'
                 }
             }
 
