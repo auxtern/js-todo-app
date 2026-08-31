@@ -100,7 +100,10 @@ pipeline {
                     echo "        TRIVY SECURITY SCAN"
                     echo "======================================"
 
+                    echo "=== Trivy Version ==="
                     trivy --version
+
+                    echo "=== Trivy Scan ==="
 
                     trivy fs \
                         --cache-dir .trivy-cache \
@@ -187,7 +190,9 @@ pipeline {
                 sh '''
                     set -e
 
-                    echo "=== Creating Application Package ==="
+                    echo "======================================"
+                    echo "       CREATING APPLICATION PACKAGE"
+                    echo "======================================"
 
                     apk add --no-cache zip unzip
 
@@ -219,6 +224,7 @@ pipeline {
         // ============================================================
         stage('Publish Application') {
             steps {
+
                 archiveArtifacts(
                     artifacts: 'latest-app.zip',
                     fingerprint: true,
@@ -226,16 +232,22 @@ pipeline {
                 )
 
                 script {
+
                     /*
-                     * URL artifact dibuat berdasarkan BUILD_URL Jenkins.
+                     * ARTIFACT_URL dibuat berdasarkan BUILD_URL Jenkins.
                      *
                      * Contoh:
-                     * https://jenkins.example.com/job/my-app/123/artifact/latest-app.zip
+                     * http://jenkins.example.com/job/my-app/123/artifact/latest-app.zip
                      */
-                    env.ARTIFACT_URL = "${env.BUILD_URL}artifact/latest-app.zip"
+                    env.ARTIFACT_URL =
+                        "${env.BUILD_URL}artifact/latest-app.zip"
 
-                    echo "=== Artifact Published ==="
-                    echo "Artifact URL: ${env.ARTIFACT_URL}"
+                    echo "======================================"
+                    echo "       APPLICATION PUBLISHED"
+                    echo "======================================"
+
+                    echo "Artifact URL:"
+                    echo "${env.ARTIFACT_URL}"
                 }
             }
         }
@@ -255,41 +267,45 @@ pipeline {
             steps {
                 script {
 
-                    echo '=========================================='
-                    echo '       START APPLICATION DEPLOYMENT'
-                    echo '=========================================='
+                    echo "=========================================="
+                    echo "       START APPLICATION DEPLOYMENT"
+                    echo "=========================================="
 
                     echo "Artifact URL:"
                     echo "${env.ARTIFACT_URL}"
 
-                    // ------------------------------------------------
+                    // ==================================================
                     // 1. REQUEST REDEPLOYMENT
-                    // ------------------------------------------------
-                    echo ''
-                    echo '=== Request Redeployment ==='
+                    // ==================================================
+
+                    echo ""
+                    echo "=== Request Redeployment ==="
 
                     def redeployResponse = sh(
-                        script: """
-                            curl -sS --fail-with-body \\
-                                -X POST '${URL_REDEPLOY}' \\
-                                -H 'Content-Type: application/json' \\
-                                -d '{
-                                    "token_access": "${DEPLOY_TOKEN}",
-                                    "website_id": "${WEBSITE_ID}",
-                                    "source_url": "${ARTIFACT_URL}"
-                                }'
-                        """,
+                        script: '''
+                            set -e
+
+                            curl -sS --fail-with-body \
+                                -X POST "$URL_REDEPLOY" \
+                                -H "Content-Type: application/json" \
+                                -d "{
+                                    \\"token_access\\": \\"$DEPLOY_TOKEN\\",
+                                    \\"website_id\\": \\"$WEBSITE_ID\\",
+                                    \\"source_url\\": \\"$ARTIFACT_URL\\"
+                                }"
+                        ''',
                         returnStdout: true
                     ).trim()
 
-                    echo 'Redeploy Response:'
+                    echo "Redeploy Response:"
                     echo redeployResponse
 
-                    // ------------------------------------------------
+                    // ==================================================
                     // 2. POLLING DEPLOYMENT PROGRESS
-                    // ------------------------------------------------
-                    echo ''
-                    echo '=== Waiting For Deployment ==='
+                    // ==================================================
+
+                    echo ""
+                    echo "=== Waiting For Deployment ==="
 
                     def maxAttempts = 120
                     def attempt = 0
@@ -309,28 +325,31 @@ pipeline {
 
                         sleep time: 5, unit: 'SECONDS'
 
-                        echo ''
+                        echo ""
                         echo "=== Checking Deployment Progress (${attempt}/${maxAttempts}) ==="
 
                         def progressResponse = sh(
-                            script: """
-                                curl -sS --fail-with-body \\
-                                    -X POST '${URL_PROGRESS}' \\
-                                    -H 'Content-Type: application/json' \\
-                                    -d '{
-                                        "token_access": "${DEPLOY_TOKEN}",
-                                        "website_id": "${WEBSITE_ID}"
-                                    }'
-                            """,
+                            script: '''
+                                set -e
+
+                                curl -sS --fail-with-body \
+                                    -X POST "$URL_PROGRESS" \
+                                    -H "Content-Type: application/json" \
+                                    -d "{
+                                        \\"token_access\\": \\"$DEPLOY_TOKEN\\",
+                                        \\"website_id\\": \\"$WEBSITE_ID\\"
+                                    }"
+                            ''',
                             returnStdout: true
                         ).trim()
 
-                        echo 'Progress Response:'
+                        echo "Progress Response:"
                         echo progressResponse
 
-                        // ------------------------------------------------
-                        // Parse JSON response
-                        // ------------------------------------------------
+                        // ==================================================
+                        // PARSE JSON
+                        // ==================================================
+
                         def json = readJSON text: progressResponse
 
                         deploymentStatus = json?.data?.status
@@ -339,43 +358,45 @@ pipeline {
 
                         if (!deploymentStatus) {
                             error(
-                                'Response progress tidak memiliki data.status'
+                                "Response progress tidak memiliki data.status"
                             )
                         }
 
                         echo "Deployment Status: ${deploymentStatus}"
 
-                        // ------------------------------------------------
+                        // ==================================================
                         // SUCCESS
-                        // ------------------------------------------------
+                        // ==================================================
+
                         if (deploymentStatus == 'SUCCESS') {
 
-                            echo ''
-                            echo '=========================================='
-                            echo '       ✅ DEPLOYMENT SUCCESS'
-                            echo '=========================================='
+                            echo ""
+                            echo "=========================================="
+                            echo "       ✅ DEPLOYMENT SUCCESS"
+                            echo "=========================================="
 
                             break
                         }
 
-                        // ------------------------------------------------
+                        // ==================================================
                         // FAIL
-                        // ------------------------------------------------
+                        // ==================================================
+
                         if (deploymentStatus == 'FAIL') {
 
-                            echo ''
-                            echo '=========================================='
-                            echo '       ❌ DEPLOYMENT FAILED'
-                            echo '=========================================='
+                            echo ""
+                            echo "=========================================="
+                            echo "       ❌ DEPLOYMENT FAILED"
+                            echo "=========================================="
 
                             def deploymentLog =
                                 json?.data?.log
                                     ?: 'Deployment failed tanpa log.'
 
-                            echo ''
-                            echo '========== DEPLOYMENT LOG =========='
+                            echo ""
+                            echo "========== DEPLOYMENT LOG =========="
                             echo deploymentLog
-                            echo '===================================='
+                            echo "===================================="
 
                             error(
                                 "Deployment gagal untuk website " +
@@ -383,16 +404,17 @@ pipeline {
                             )
                         }
 
-                        // ------------------------------------------------
-                        // STATUS LAIN
-                        // ------------------------------------------------
-                        echo 'Deployment masih berjalan...'
+                        // ==================================================
+                        // OTHER STATUS
+                        // ==================================================
+
+                        echo "Deployment masih berjalan..."
                     }
 
-                    echo ''
-                    echo '=========================================='
-                    echo '       DEPLOYMENT FINISHED'
-                    echo '=========================================='
+                    echo ""
+                    echo "=========================================="
+                    echo "       DEPLOYMENT FINISHED"
+                    echo "=========================================="
                 }
             }
         }
@@ -411,27 +433,29 @@ pipeline {
         }
 
         success {
-            echo '=========================================='
-            echo '       ✅ PIPELINE SUCCESS'
-            echo '=========================================='
 
-            echo 'Test: SUCCESS'
-            echo 'Trivy: SUCCESS'
-            echo 'SonarQube: SUCCESS'
-            echo 'Quality Gate: SUCCESS'
-            echo 'Package: SUCCESS'
-            echo 'Deployment: SUCCESS'
+            echo "=========================================="
+            echo "       ✅ PIPELINE SUCCESS"
+            echo "=========================================="
+
+            echo "Test: SUCCESS"
+            echo "Trivy: SUCCESS"
+            echo "SonarQube: SUCCESS"
+            echo "Quality Gate: SUCCESS"
+            echo "Package: SUCCESS"
+            echo "Deployment: SUCCESS"
 
             echo "📦 Artifact: ${env.ARTIFACT_URL}"
-            echo '🚀 Website berhasil dideploy.'
+            echo "🚀 Website berhasil dideploy."
         }
 
         failure {
-            echo '=========================================='
-            echo '       ❌ PIPELINE FAILED'
-            echo '=========================================='
 
-            echo 'Periksa log pipeline untuk mengetahui tahap yang gagal.'
+            echo "=========================================="
+            echo "       ❌ PIPELINE FAILED"
+            echo "=========================================="
+
+            echo "Periksa log pipeline untuk mengetahui tahap yang gagal."
         }
     }
 }
