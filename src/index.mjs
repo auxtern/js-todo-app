@@ -21,6 +21,7 @@ const toggleTodo = new ToggleTodo(todoRepository);
 const deleteTodo = new DeleteTodo(todoRepository);
 
 const app = express();
+app.disable('x-powered-by'); // avoid disclosing framework/version via X-Powered-By header
 app.use(express.json());
 
 app.get('/todos', async (req, res, next) => {
