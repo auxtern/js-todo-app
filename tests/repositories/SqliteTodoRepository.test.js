@@ -67,3 +67,44 @@ describe('SqliteTodoRepository', () => {
     expect(deleted).toBe(false);
   });
 });
+
+describe('SqliteTodoRepository (error paths)', () => {
+  it('should reject init when table creation fails', async () => {
+    const fakeDb = { run: (sql, cb) => cb(new Error('create table failed')) };
+    await expect(SqliteTodoRepository.init(fakeDb)).rejects.toThrow('create table failed');
+  });
+
+  it('should reject save when the statement fails', async () => {
+    const fakeDb = {
+      prepare: () => ({
+        run: (id, title, completed, createdAt, cb) => cb(new Error('save failed')),
+        finalize: () => {}
+      })
+    };
+    const repository = new SqliteTodoRepository(fakeDb);
+    const todo = new Todo({ id: '1', title: 'Task' });
+
+    await expect(repository.save(todo)).rejects.toThrow('save failed');
+  });
+
+  it('should reject findById when the query fails', async () => {
+    const fakeDb = { get: (sql, params, cb) => cb(new Error('findById failed')) };
+    const repository = new SqliteTodoRepository(fakeDb);
+
+    await expect(repository.findById('1')).rejects.toThrow('findById failed');
+  });
+
+  it('should reject findAll when the query fails', async () => {
+    const fakeDb = { all: (sql, params, cb) => cb(new Error('findAll failed')) };
+    const repository = new SqliteTodoRepository(fakeDb);
+
+    await expect(repository.findAll()).rejects.toThrow('findAll failed');
+  });
+
+  it('should reject delete when the query fails', async () => {
+    const fakeDb = { run: (sql, params, cb) => cb(new Error('delete failed')) };
+    const repository = new SqliteTodoRepository(fakeDb);
+
+    await expect(repository.delete('1')).rejects.toThrow('delete failed');
+  });
+});

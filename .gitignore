@@ -2,3 +2,4 @@
 /.examples
 /.env
 todos.sqlite
+/coverage
