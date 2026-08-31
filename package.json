@@ -2,9 +2,9 @@
   "name": "js-todo-app",
   "version": "1.0.0",
   "description": "Simple Todo App with Clean Architecture",
-  "main": "src/index.js",
+  "main": "src/index.mjs",
   "scripts": {
-    "start": "node src/index.js",
+    "start": "node src/index.mjs",
     "test": "jest"
   },
   "dependencies": {
