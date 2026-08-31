@@ -10,6 +10,14 @@ import ToggleTodo from './usecases/ToggleTodo.js';
 import DeleteTodo from './usecases/DeleteTodo.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// load APP_PORT/etc. from .env without overriding vars already set in the environment
+try {
+  process.loadEnvFile(path.join(__dirname, '..', '.env'));
+} catch {
+  // no .env file present, fall back to process env / defaults
+}
+
 const PORT = process.env.APP_PORT || 3000;
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'todos.sqlite');
 
