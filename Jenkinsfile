@@ -223,7 +223,12 @@ pipeline {
         // PUBLISH APPLICATION
         // ============================================================
         stage('Publish Application') {
+
             steps {
+
+                // ========================================================
+                // 1. ARCHIVE ARTIFACT KE JENKINS
+                // ========================================================
 
                 archiveArtifacts(
                     artifacts: 'latest-app.zip',
@@ -233,16 +238,56 @@ pipeline {
 
                 script {
 
-                    /*
-                     * ARTIFACT_URL dibuat berdasarkan BUILD_URL Jenkins.
-                     *
-                     * Contoh:
-                     * http://jenkins.example.com/job/my-app/123/artifact/latest-app.zip
-                     */
-                    env.ARTIFACT_URL = env.BUILD_URL.replace(
-                        'localhost',
-                        'host.docker.internal'
-                    ) + 'artifact/latest-app.zip'
+                    // ====================================================
+                    // 2. BUAT IDENTITAS APPLICATION
+                    // ====================================================
+
+                    def appName = env.JOB_NAME
+                        .replaceAll('[^a-zA-Z0-9._-]', '-')
+                        .replaceAll('-+', '-')
+                        .replaceAll('^-|-$', '')
+
+                    def buildId = env.BUILD_NUMBER
+
+                    echo "Application Name: ${appName}"
+                    echo "Build ID: ${buildId}"
+
+                    // ====================================================
+                    // 3. COPY KE USER CONTENT
+                    // ====================================================
+
+                    sh """
+                        set -e
+
+                        echo "======================================"
+                        echo "       PUBLISHING USER CONTENT"
+                        echo "======================================"
+
+                        docker exec cicd-jenkins \
+                            mkdir -p \
+                            "/var/jenkins_home/userContent/applications/${appName}/${buildId}"
+
+                        docker cp \
+                            latest-app.zip \
+                            "cicd-jenkins:/var/jenkins_home/userContent/applications/${appName}/${buildId}/latest-app.zip"
+
+                        echo "=== Published File ==="
+
+                        docker exec cicd-jenkins \
+                            ls -lh \
+                            "/var/jenkins_home/userContent/applications/${appName}/${buildId}/latest-app.zip"
+                    """
+
+                    // ====================================================
+                    // 4. BUAT PUBLIC ARTIFACT URL
+                    // ====================================================
+
+                    def jenkinsBaseUrl = env.BUILD_URL
+                        .substring(0, env.BUILD_URL.indexOf('/job/'))
+                        .replace('localhost', 'host.docker.internal')
+
+                    env.ARTIFACT_URL =
+                        "${jenkinsBaseUrl}/userContent/applications/${appName}/${buildId}/latest-app.zip"
 
                     echo "======================================"
                     echo "       APPLICATION PUBLISHED"
